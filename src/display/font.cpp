@@ -793,8 +793,21 @@ SharedFontState::getFont(Exception &exception, std::string family,
 	{
 		/* Use 'other' path as alternative in case
 		 * we have no 'regular' styled font asset */
-		const char *path = !req.regular.empty()
-		                 ? req.regular.c_str() : req.other.c_str();
+		const std::string *path_str = &req.regular;
+		if (path_str->empty())
+			path_str = &req.other;
+		/* The family may have been registered only via SFNT name-table
+		 * entries (e.g. localized CJK family names such as Chinese
+		 * aliases inside simhei.ttf / msyh.ttf). Fall back to those
+		 * paths too - otherwise a family that fontPresent() reports as
+		 * existing resolves to an empty path here and font loading
+		 * fails ("failed to load font") even though the font file is
+		 * present. */
+		if (path_str->empty())
+			path_str = &req.sfnt_regular;
+		if (path_str->empty())
+			path_str = &req.sfnt_other;
+		const char *path = path_str->c_str();
 
 		entry = p->ftOpenFile(std::shared_ptr<struct FileSystem::File>(new struct FileSystem::File(*mkxp_retro::fs, path)));
 		if (!entry.has_value())
