@@ -191,6 +191,13 @@ struct SharedFontStatePrivate
 	{
 		SharedFontStatePrivate::PoolEntry entry;
 
+		/* The read handle can be NULL if the file failed to open; without
+		 * this check PHYSFS_seek/PHYSFS_readBytes would dereference NULL
+		 * inside the FT_StreamRec callbacks (observed crash on Windows). */
+		if (ops.get() == nullptr || !ops.get()->is_read_open()) {
+			return boost::none;
+		}
+
 		if (shState->config().loadFontsIntoMemory) {
 			PHYSFS_sint64 length = PHYSFS_fileLength(ops.get()->get_read());
 			if (length == -1 || (uint64_t)length > std::min((uint64_t)SIZE_MAX, (uint64_t)ULONG_MAX)) {

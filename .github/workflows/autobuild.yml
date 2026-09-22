@@ -663,7 +663,6 @@ jobs:
           mkdir ~/dist
           cd build
           CLICOLOR_FORCE=1 ninja -v
-          ${{ matrix.arch_gcc }}-strip mkxp-z_libretro.dll
           mv mkxp-z_libretro.dll ~/dist/mkxp-z_libretro.dll
 
       - name: Upload artifact
