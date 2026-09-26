@@ -7,7 +7,7 @@ index b3893afd58..58b94e67f9 100644
  
     fill_pathname_join(g_defaults.path_config,
 -         g_defaults.dirs[DEFAULT_DIR_PORT],
-+         "romfs:/retroarch",
++         "sdmc:/retroarch/bootstrap",
           FILE_PATH_MAIN_CONFIG,
           sizeof(g_defaults.path_config));
  
