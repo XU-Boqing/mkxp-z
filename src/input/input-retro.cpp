@@ -1052,6 +1052,14 @@ struct InputPrivate
         mouseX = (int16_t)mkxp_retro::input_state(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
         mouseY = (int16_t)mkxp_retro::input_state(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
         mouseInWindow = !mkxp_retro::input_state(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN);
+        // Some frontends (e.g. the Switch input driver) simulate mouse clicks
+        // from taps with a short auto-release window (50ms), which breaks
+        // click-and-hold / drag interactions in games. OR the real pointer
+        // "pressed" state into the left mouse button so holding a finger
+        // down keeps the button down for as long as the touch lasts.
+        if (mkxp_retro::input_state(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED)) {
+            mouseStates[0] |= 1 << RETRO_DEVICE_ID_MOUSE_LEFT;
+        }
         scrollV += mkxp_retro::input_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
         scrollV -= mkxp_retro::input_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
     }
