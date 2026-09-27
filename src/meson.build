@@ -451,7 +451,20 @@ if not sdl2.found() or not sdl2main.found()
         'use_filesystem': 'enabled',
         'use_joystick': 'enabled',
         'use_haptic': 'disabled',
-        'use_hidapi': 'disabled',
+        # HIDAPI joystick backend: REQUIRED on Windows for Bluetooth
+        # Switch Pro Controller support. SDL's hidapi backend performs
+        # the Nintendo HID handshake (command reports) that makes the
+        # pad actually stream input; without it SDL falls back to
+        # Windows.Gaming.Input/DirectInput which never sends those
+        # commands and the pad stays silent (verified 2026-09-27:
+        # pygame SDL 2.32.10 w/ hidapi works, white-axe builds w/o
+        # hidapi receive zero reports). Keep disabled on Linux to
+        # honor upstream commit 0869df5a (reduce external deps).
+        # NOTE: 'auto' (not 'enabled') on Windows: SDL's meson treats
+        # libusb-1.0 as a HARD dep when hidapi=enabled; with auto the
+        # native Windows HID backend (src/hidapi/windows/hid.c) is used
+        # and libusb stays optional.
+        'use_hidapi': host_system in ['windows', 'cygwin'] ? 'auto' : 'disabled',
         'use_loadso': 'enabled',
         'use_locale': 'disabled',
         'use_render': 'enabled',
