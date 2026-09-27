@@ -20,11 +20,14 @@
  */
 
 #include <cstring>
+#include <cstdint>
 #include "input.h"
 #include "core.h"
 #include "sharedstate.h"
 #include "graphics.h"
 #include "mkxp-polyfill.h" // std::lround
+
+#define ZZ_SDL_CONTROLLER_AXIS_MAX (SDL_CONTROLLER_AXIS_TRIGGERRIGHT + 1)
 
 #define JOYPAD_BUTTON_MAX 16
 #define REPEAT_START (rgssVer >= 2 ? 0.375 : 0.400)
@@ -955,6 +958,10 @@ struct InputPrivate
     uint8_t rawButtonStates[NUM_CONTROLLER_BUTTONS];
     uint8_t rawButtonStatesOld[NUM_CONTROLLER_BUTTONS];
 
+    // analog axes in SDL_GameControllerAxis order:
+    // 0 LEFTX, 1 LEFTY, 2 RIGHTX, 3 RIGHTY, 4 TRIGGERLEFT, 5 TRIGGERRIGHT
+    int16_t rawAxisStates[ZZ_SDL_CONTROLLER_AXIS_MAX];
+
     uint8_t repeating;
     uint32_t repeatCount;
     double repeatTime;
@@ -989,6 +996,7 @@ struct InputPrivate
         rawKeyStatesOld {},
         rawButtonStates {},
         rawButtonStatesOld {},
+        rawAxisStates {},
         repeating(Input::None),
         repeatCount(0),
         repeatTime(0),
@@ -1018,6 +1026,18 @@ struct InputPrivate
                 }
             }
         }
+
+        // analog axes from RetroPad port 0, SDL_GameControllerAxis order.
+        // RETRO axis indices: 0/1 = left X/Y, 2/3 = right X/Y. SDL trigger
+        // axes (4/5) have no RetroArch equivalent (buttons L2/R2 only) -
+        // synthesized from the digital L2/R2 states so trigger_axis reads
+        // half-work instead of hard-zero.
+        rawAxisStates[SDL_CONTROLLER_AXIS_LEFTX] = mkxp_retro::input_state(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+        rawAxisStates[SDL_CONTROLLER_AXIS_LEFTY] = mkxp_retro::input_state(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
+        rawAxisStates[SDL_CONTROLLER_AXIS_RIGHTX] = mkxp_retro::input_state(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
+        rawAxisStates[SDL_CONTROLLER_AXIS_RIGHTY] = mkxp_retro::input_state(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+        rawAxisStates[SDL_CONTROLLER_AXIS_TRIGGERLEFT] = (joypadStates[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L2)) ? INT16_MAX : 0;
+        rawAxisStates[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] = (joypadStates[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R2)) ? INT16_MAX : 0;
     }
 
     void updateLightgun()
@@ -1545,17 +1565,19 @@ unsigned int Input::rawButtonStatesLength()
 
 int16_t *Input::rawAxes()
 {
-    return nullptr; // TODO
+    return p->rawAxisStates;
 }
 
 unsigned int Input::rawAxesLength()
 {
-    return 0; // TODO
+    return ZZ_SDL_CONTROLLER_AXIS_MAX;
 }
 
 short Input::getControllerAxisValue(SDL_GameControllerAxis axis)
 {
-    return 0; // TODO
+    if (axis < 0 || axis >= ZZ_SDL_CONTROLLER_AXIS_MAX)
+        return 0;
+    return p->rawAxisStates[axis];
 }
 
 int Input::dir4Value()
