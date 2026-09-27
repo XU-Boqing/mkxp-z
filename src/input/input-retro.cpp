@@ -1616,12 +1616,22 @@ bool Input::mouseInWindow()
 
 bool Input::getControllerConnected()
 {
-    return true;
+    if (p->joypadStates[0] != 0)
+        return true;
+    for (int i = 0; i < ZZ_SDL_CONTROLLER_AXIS_MAX; ++i) {
+        if (p->rawAxisStates[i] < -8192 || p->rawAxisStates[i] > 8192)
+            return true;
+    }
+    return false;
 }
 
 const char *Input::getControllerName()
 {
+#ifdef __SWITCH__
+    return "Nintendo Switch Controller";
+#else
     return "RetroPad";
+#endif
 }
 
 int Input::getControllerPowerLevel()
